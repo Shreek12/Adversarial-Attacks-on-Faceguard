@@ -108,12 +108,14 @@ For real‑world access control, robustness is more important than small accurac
 
 ## 8. Project Structure
 
-CW2/
-│
 ├── augmented_faces.npy
+
 ├── augmented_labels.npy
+
 ├── best_faceguard_model.pth
+
 ├── CW2_ShreeyaKangutkar.ipynb
+
 └── README.md
 
 ---
