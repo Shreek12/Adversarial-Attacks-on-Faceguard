@@ -1,139 +1,134 @@
-🛡️ FaceGuard Security Assessment — Red Team & Blue Team 
+# FaceGuard AI Security Assessment
 
-This project extends the FaceGuard facial recognition system developed by performing a full AI security assessment using a structured Red Team / Blue Team methodology. The goal is to evaluate how an adversary could compromise the system through model stealing and adversarial attacks, and how defensive strategies such as adversarial training can improve robustness.
+This repository contains the full Red Team / Blue Team security evaluation of **FaceGuard**, the facial recognition access‑control system developed in CW1. The project investigates how an attacker can steal the model, generate adversarial examples, transfer attacks to the real system, and how adversarial training can defend against these threats.
 
-##**Project Overview**
-FaceGuard is a CNN‑based facial recognition system that controls access to a secure server room. Only three employees are authorised:
+---
 
-CEO — ID 0
-CTO — ID 5
-System Administrator — ID 10
+## 1. Overview
 
-In this coursework, we investigate whether an attacker with black‑box access (query‑only) can:
--Steal the model
--Generate adversarial examples
--Transfer attacks to the real system
--Bypass access control (targeted impersonation)
--Be defended against using adversarial training
+FaceGuard is a CNN‑based facial recognition system trained on the Augmented Olivetti Faces dataset (40 classes). Only three employees are authorised for server‑room access:
 
-**Red Team Tasks**
-**Task 1 — Victim Model Setup (Prerequisite)**
-The original FaceGuard CNN from CW1 is loaded and evaluated on the Augmented Olivetti Faces dataset.
+- CEO (ID 0)  
+- CTO (ID 5)  
+- System Administrator (ID 10)
 
-Architecture: 2‑block CNN (Conv → BN → ReLU → Pool → FC)
+This coursework evaluates the security of FaceGuard using:
 
-Dataset: 2000 images, 40 classes
+- Model Stealing  
+- FGSM and PGD Adversarial Attacks  
+- Targeted Impersonation Attacks  
+- Transferability Analysis  
+- Adversarial Training Defence  
 
-Clean Test Accuracy: 98.75% (meets ≥85% requirement)
+---
 
-This model acts as the victim/target model for all attacks.
+## 2. Victim Model (FaceGuard)
 
-**Task 2 — Model Stealing Attack**
-An attacker with query‑only access steals the model by:
-Black‑box query wrapper
-Only returns predicted labels — no gradients or internal details.
-Surrogate dataset creation
-All training images are queried to obtain stolen labels.
-Proxy model training
-A lighter CNN (ProxyCNN) is trained on the stolen dataset.
+- Architecture: 2‑block CNN (Conv → BN → ReLU → MaxPool → FC)  
+- Dataset: Augmented Olivetti Faces (2000 images, 40 classes)  
+- Clean Test Accuracy: **98.75%**
 
-Results
-Proxy Test Accuracy: 94.00%
-Victim Accuracy: 98.75%
-Fidelity Gap: 4.75%
+This model acts as the **victim/target** for all attacks.
 
-The proxy successfully mimics the victim model and is strong enough for adversarial crafting.
+---
 
-**Task 3 — Adversarial Attacks on Proxy Model**
-Implemented Attacks
-FGSM (untargeted)
-PGD (untargeted, iterative)
-Targeted PGD (non‑authorised → CEO impersonation)
+## 3. Task 2 — Model Stealing (Proxy Model)
 
-Robustness Evaluation
-Accuracy vs. epsilon curves show:
+An attacker with black‑box access queries the victim model to build a surrogate dataset.
 
-FGSM collapses accuracy at ε ≥ 0.05
-PGD is even stronger — accuracy drops to 0% at small epsilons
-Proxy model is highly vulnerable
-Targeted Attack
-A non‑authorised user (e.g., ID 39) is modified to impersonate the CEO (ID 0).
+### Steps:
+1. Query victim model for labels  
+2. Train a smaller CNN (ProxyCNN) on stolen labels  
+3. Compare proxy vs victim performance  
 
-Result:
+### Results:
+- Proxy Model Accuracy: **94.00%**  
+- Victim Model Accuracy: 98.75%  
+- Fidelity Gap: 4.75%
 
-Proxy model predicts 0
-Victim model also predicts 0
-Targeted impersonation attack succeeds and transfers
-This demonstrates a severe security risk.
+The proxy successfully mimics the victim and is suitable for adversarial crafting.
 
-**Task 4 — Transferability Attack**
+---
+
+## 4. Task 3 — Adversarial Attacks on Proxy Model
+
+### Implemented Attacks:
+- FGSM (untargeted)  
+- PGD (untargeted, iterative)  
+- Targeted PGD (non‑authorised → CEO impersonation)  
+
+### Key Findings:
+- FGSM accuracy collapses at epsilon ≥ 0.05  
+- PGD reduces accuracy to **0%** at small epsilons  
+- Targeted PGD successfully forces a non‑authorised user to be classified as **CEO (ID 0)**  
+- The targeted attack also fools the victim model  
+
+This demonstrates a serious impersonation risk.
+
+---
+
+## 5. Task 4 — Transferability Attack
+
 Adversarial examples crafted on the proxy model are tested on the victim model.
 
-Transferability Findings
-FGSM and PGD adversarial examples successfully fool the victim model
-Transfer rate increases with epsilon
-PGD‑crafted examples transfer more reliably
-Targeted impersonation (→ CEO) also transfers
+### Results:
+- FGSM and PGD adversarial examples transfer successfully  
+- Transfer rate increases with epsilon  
+- Targeted impersonation attack also transfers  
 
-Implication
-Even without access to the victim model’s architecture or gradients, an attacker can still bypass FaceGuard using a stolen proxy.
+This shows that even black‑box attackers can bypass FaceGuard.
 
-##**Blue Team Task**
-**Task 5 — Adversarial Training Defence**
-A new model, Robust_FaceGuard, is trained using PGD adversarial training.
-Defence Steps
-Generate PGD adversarial examples during training
-Train model on both clean + adversarial samples
-Evaluate robustness against FGSM and PGD
+---
 
-Results
-Clean accuracy decreases (expected tradeoff)
-Robust accuracy significantly improves
-Robust_FaceGuard withstands higher epsilons compared to original FaceGuard
+## 6. Task 5 — Adversarial Training Defence
 
-Accuracy–Robustness Tradeoff
-Original model: high clean accuracy, poor robustness
-Robust model: slightly lower clean accuracy, much higher adversarial resilience
-In real‑world access control, robustness is more important than marginal clean accuracy gains
+A new model, **Robust_FaceGuard**, is trained using PGD adversarial training.
 
-Key Visualisations Included
-Victim model training curves
-Proxy model training curves
-FGSM & PGD accuracy vs. epsilon
+### Results:
+- Clean accuracy decreases (expected tradeoff)  
+- Robust accuracy improves significantly  
+- Robust_FaceGuard withstands higher epsilons compared to original FaceGuard  
 
-Transferability comparison (proxy vs. victim)
-Targeted attack visualisation (original, adversarial, perturbation)
-Robust vs. non‑robust model comparison plots
+### Conclusion:
+Adversarial training improves robustness but reduces clean accuracy.  
+For real‑world access control, robustness is more important than small accuracy gains.
 
-## Technologies Used
-Python
-PyTorch
-NumPy
-Matplotlib
-Scikit‑Learn
-Seaborn
+---
 
-##**Project Structure**
-Code
+## 7. Technologies Used
 
+- Python  
+- PyTorch  
+- NumPy  
+- Matplotlib  
+- Scikit‑Learn  
+- Seaborn  
+
+---
+
+## 8. Project Structure
+
+CW2/
+│
 ├── augmented_faces.npy
 ├── augmented_labels.npy
 ├── best_faceguard_model.pth
 ├── CW2_ShreeyaKangutkar.ipynb
-├── README.md
-└── images/ (optional visualisations)
+└── README.md
 
-## Academic Context
-This project was completed as part of:
+---
+
+## 9. Academic Context
 
 ELE8100 – CyberAI  
-MSc Applied Cyber Security
-Queen’s University Belfast
+MSc Applied Cyber Security  
+Queen’s University Belfast  
 Academic Year 2025/26
 
-## AI Assistance Declaration
-This coursework includes AI‑assisted support for:
+---
 
-Structuring explanations
-Improving clarity of markdown analysis
-All code implementation, attack logic, and analysis were authored by the me.
+## 10. AI Assistance Declaration
+
+AI assistance was used for structuring explanations and improving clarity of markdown documentation.  
+All code, attack implementations, and analysis were authored by the student.
+
